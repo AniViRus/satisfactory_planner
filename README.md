@@ -8,9 +8,9 @@ Running that will create the data.json file for this model. (read_docs.py out of
 
 ## Setup
 
-- Install Python 3.8.5 or later. [link](https://www.python.org/downloads/)
+- Install Python 3.8.5 - 3.12.x. [link](https://www.python.org/downloads/)
 - Install `glpk` open-source solver onto your computer. [link](https://ftp.gnu.org/gnu/glpk/?C=N;O=D) or for Windows: [link](https://winglpk.sourceforge.net/)
-- Set the path where GLPK is installed.
+- Set the PATH where GLPK is installed.
 
 On Windows:
 
@@ -29,6 +29,12 @@ Install the required packages using pip:
 pip install -r requirements.txt
 pip install pyinstaller
 ```
+
+OR
+
+run the Windows batch file:
+
+`pyplugins.bat`
 
 You may wish to use a Python [Virtual Environment](https://docs.python.org/3/library/venv.html) to avoid polluting your system Python installation.
 

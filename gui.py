@@ -5,7 +5,7 @@ if sys.stdout is None or sys.stderr is None:
     sys.stdout = open(os.devnull, 'w')
     sys.stderr = open(os.devnull, 'w') 
 
-import PySimpleGUI as sg
+import FreeSimpleGUI as sg
 import json
 from main import optimize_production
 
@@ -28,7 +28,7 @@ if glpk_path is None:
     )
 
 # Load data from data.json
-data_file = 'Data\data.json'
+data_file = 'Data\\data.json'
 try:
     with open(data_file, 'r') as file:
         data = json.load(file)
@@ -61,8 +61,10 @@ recipes = {key: data['recipes'][key]['name'] for key in data['recipes']}
 settings = load_settings('Saves/default.json')
 
 # Separate recipes into regular and alternate lists
-regular_recipes = sorted([(key, name) for key, name in recipes.items() if not name.startswith('Alternate')], key=lambda x: x[1])
+regular_recipes = sorted([(key, name) for key, name in recipes.items() if not name.startswith('Alternate') and not name.startswith('EasyAlt') and not name.startswith('Other')], key=lambda x: x[1])
 alternate_recipes = sorted([(key, name) for key, name in recipes.items() if name.startswith('Alternate')], key=lambda x: x[1])
+easyalt_recipes = sorted([(key, name) for key, name in recipes.items() if name.startswith('EasyAlt')], key=lambda x: x[1])
+other_recipes = sorted([(key, name) for key, name in recipes.items() if name.startswith('Other')], key=lambda x: x[1])
 
 # Extract items and their names from the data
 products = {p['item'] for recipe in data['recipes'].values() for p in recipe['products']}
@@ -154,6 +156,14 @@ recipes_layout = [
         sg.Column([
             [sg.Text('Alternate Recipes'), sg.Checkbox('Select All', default=True, key='alternate_select_all', enable_events=True)],
             *[[sg.Checkbox(name, default=True, key=f"recipe_{key}")] for key, name in alternate_recipes]
+        ], scrollable=True, vertical_scroll_only=True, size=(250, 300)),
+        sg.Column([
+            [sg.Text('EasyAlt Recipes'), sg.Checkbox('Select All', default=True, key='easyalt_select_all', enable_events=True)],
+            *[[sg.Checkbox(name, default=True, key=f"recipe_{key}")] for key, name in easyalt_recipes]
+        ], scrollable=True, vertical_scroll_only=True, size=(250, 300)),
+        sg.Column([
+            [sg.Text('Other Mod Recipes'), sg.Checkbox('Select All', default=True, key='other_select_all', enable_events=True)],
+            *[[sg.Checkbox(name, default=True, key=f"recipe_{key}")] for key, name in other_recipes]
         ], scrollable=True, vertical_scroll_only=True, size=(250, 300))
     ]
 ]
@@ -183,14 +193,20 @@ def create_output_layout(key_suffix, visible=True):
 # Initial layout for outputs
 output_layout = [
     [sg.Text('Outputs', font=('Helvetica', 16), text_color=sg.LOOK_AND_FEEL_TABLE['Modern']['ACCENT1'])],
-    create_output_layout(0),
+    [sg.Column(
+        [create_output_layout(0)],
+        key='Outputs',
+        scrollable=True,
+        vertical_scroll_only=True,
+        size=(None, 200)  # Adjust the height as needed
+    )],
     [sg.Button('Add Output'), sg.Button('Remove Output')]
 ]
 
 # Layout for results
 results_layout = [
-    [sg.Text('Results', font=('Helvetica', 16), text_color=sg.LOOK_AND_FEEL_TABLE['Modern']['ACCENT1']), sg.Button('Run Optimization'), sg.Button('Save Settings'), sg.Button('Load Settings'), sg.Button('Reset')],
-    [sg.Multiline(size=(80, 20), key='results_output')]
+    [sg.Text('Results', font=('Helvetica', 16), text_color=sg.LOOK_AND_FEEL_TABLE['Modern']['ACCENT1']), sg.Button('Run Optimization'), sg.Button('Save Settings'), sg.Button('Load Settings'), sg.Button('Reset'), sg.Button('Refresh Data')],
+    [sg.Multiline(size=(80, 30), key='results_output')]
 ]
 
 # Layout for products
@@ -255,6 +271,12 @@ while True:
     elif event == 'alternate_select_all':
         for key, _ in alternate_recipes:
             window[f'recipe_{key}'].update(values['alternate_select_all'])
+    elif event == 'easyalt_select_all':
+        for key, _ in easyalt_recipes:
+            window[f'recipe_{key}'].update(values['easyalt_select_all'])
+    elif event == 'other_select_all':
+        for key, _ in other_recipes:
+            window[f'recipe_{key}'].update(values['other_select_all'])
 
     # Handle add input button
     elif event == 'Add Input':
@@ -281,12 +303,14 @@ while True:
             window.extend_layout(window['Outputs'], [create_output_layout(output_key_suffix)])
         output_key_suffix += 1
         highest_output_key = max(highest_output_key, output_key_suffix)
+        window['Outputs'].contents_changed()
 
     # Handle remove output button
     elif event == 'Remove Output' and output_key_suffix > 1:
         output_key_suffix -= 1
         window[f'output_item_{output_key_suffix}'].update(visible=False)
         window[f'output_amount_{output_key_suffix}'].update(visible=False)
+        window['Outputs'].contents_changed()
 
     # Handle maximize checkbox
     elif event.startswith('output_checkbox_'):
@@ -367,6 +391,7 @@ while True:
                         highest_output_key = max(highest_output_key, output_key_suffix)
                     window[f'output_item_{i}'].update(items[item])
                     window[f'output_amount_{i}'].update(amount)
+                    window['Outputs'].contents_changed()
                 # Load maximize checkbox
                 if settings['max_item']:
                     window[f'output_checkbox_{0}'].update(True)
@@ -413,6 +438,16 @@ while True:
         window['products_output'].update('')
         window['ingredients_output'].update('')
         sg.popup("Settings reset to default values.")
+        
+    # Handle refresh data button
+    elif event == 'Refresh Data':
+        data_file = 'Data\\data.json'
+        try:
+            with open(data_file, 'r') as file:
+                data = json.load(file)
+        except Exception as e:
+            sg.popup_error(f"Failed to load file: {e}")
+            data = None
 
     # Handle run optimization button
     elif event == 'Run Optimization':

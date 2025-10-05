@@ -80,7 +80,7 @@ def calculate_power_use(m, data, recipes):
     m.c.add(expr == m.power_use)
 
 def calculate_item_use(m, items):
-    expr = sum(m.i[item] for item in items if item != 'Power_Produced' and item != 'Power_Produced_Other' and item != 'Power_Produced_Fuel' and item != 'Power_Produced_Nuclear')
+    expr = sum(m.i[item] for item in items if item != 'Power_Produced' and item != 'Power_Produced_Fuel' and item != 'Power_Produced_Nuclear')
     m.c.add(expr == m.item_use)
 
 def calculate_building_use(m, recipes):

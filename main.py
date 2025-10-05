@@ -26,7 +26,7 @@ def optimize_production(data, settings):
     items_needed = {data['items'][var_name]['name']: var.value for var_name, var in m.i.items() if var.value is not None and var.value > 0.001 and var_name not in settings['resource_limits']}
     items_not_needed = {var_name: var.value for var_name, var in m.i.items() if var.value is not None and var.value <= 0.001 and var_name not in settings['resource_limits']}
     recipes_used = {data['recipes'][var_name]['name']: var.value for var_name, var in m.r.items() if var.value is not None and var.value > 0.001}
-    power_produced = m.x['Power_Produced_Other']() + m.x['Power_Produced_Fuel']() + m.x['Power_Produced_Nuclear']()
+    power_produced = m.x['Power_Produced_Fuel']() + m.x['Power_Produced_Nuclear']()
 
     products_map = {
     data['items'][item]['name'] if item in data['items'] else data['resources'][item]['name']: {
